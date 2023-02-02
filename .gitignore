@@ -1,3 +1,6 @@
 *~
 elpa/*
 auto-save-list/*
+custom.el
+notes.org
+local.el

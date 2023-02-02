@@ -51,7 +51,11 @@
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                          ("org" . "https://orgmode.org/elpa/")
                          ("elpa" . "https://elpa.gnu.org/packages/")))
-(require 'use-package)
+
+(when (not (require 'use-package nil 'noerror))
+  (package-refresh-contents)
+  (package-install 'use-package))
+
 (setq use-package-always-ensure t)
 
 

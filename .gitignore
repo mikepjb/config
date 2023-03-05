@@ -2,5 +2,8 @@
 elpa/*
 auto-save-list/*
 custom.el
-notes.org
 local.el
+*.org
+projectile-bookmarks.eld
+transient/
+eshell/

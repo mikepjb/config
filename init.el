@@ -1,38 +1,20 @@
-(defconst *is-a-mac* (eq system-type 'darwin))
-
-(when *is-a-mac*
-  (setq mac-command-modifier 'meta)
-  (setq mac-option-modifier 'none))
-
+;; not organised.. TODO organise!
 (menu-bar-mode -1)
 (tool-bar-mode -1)
-(if (display-graphic-p)
+
+(fido-mode 1)
+(electric-pair-mode 1)
+
+(when (display-graphic-p)
     (scroll-bar-mode -1))
 
-(setq inhibit-startup-screen t)
+(setq inhibit-startup-screen t
+      bidi-paragraph-diretion 'left-to-right
+      bidi-inhibit-bpa t)
 
-(load-theme 'tailstone t)
+(setq custom-file (concat user-emacs-directory "custom.el"))
 
-;; N.B make sure to install the seperate_statics font as I can't find a way to work with variable fonts in Emacs.
-(when (x-list-fonts "Recursive Mono Linear Static")
-  (set-face-attribute 'default nil :font "Recursive Mono Linear Static" :height 120 :weight 'normal)
-  ;; TODO remove? (set-frame-font "Recursive Mono Linear Static" nil t)
-)
-
-(electric-pair-mode 1)
-(fido-mode 1)
-(tab-bar-mode 1)
-
-(setq tab-bar-new-tab-choice "*scratch*"
-      tab-bar-new-tab-to 'rightmost
-      tab-bar-close-button-show nil
-      tab-bar-new-button-show nil)
-(setq-default indent-tabs-mode nil)
-
-(column-number-mode)
-(global-display-line-numbers-mode t)
-(setq global-auto-revert-non-file-buffers t)
-(global-auto-revert-mode 1)
+(when window-system (set-frame-size (selected-frame) 200 80))
 
 (dolist (mode '(org-mode-hook
 		term-mode-hook
@@ -41,79 +23,14 @@
 		eshell-mode-hook))
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
-(setq custom-file (concat user-emacs-directory "custom.el"))
+(defconst *is-a-mac* (eq system-type 'darwin))
 
-(setq package-archives '(("melpa" . "https://melpa.org/packages/")
-			 ("elpa" . "https://elpa.gnu.org/packages/")))
+(when *is-a-mac*
+  (setq mac-command-modifier 'meta)
+  (setq mac-option-modifier 'none))
 
-(require 'package)
-(setq use-package-always-ensure t)
-(setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                         ("org" . "https://orgmode.org/elpa/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")))
-
-(when (not (require 'use-package nil 'noerror))
-  (package-refresh-contents)
-  (package-install 'use-package))
-
-(setq use-package-always-ensure t)
-
-
-;; TODO fn to show XXX/TODOs in current project please!
-;; the tabs workflow for a tmux like setup..? needed?
-
-;; (use-package evil
-;;   :config (progn
-;; 	    (define-key evil-insert-state-map (kbd "C-c") 'evil-normal-state)
-;; 	    (define-key evil-insert-state-map (kbd "C-e") 'move-end-of-line)
-;; 	    (define-key evil-insert-state-map (kbd "C-a") 'move-beginning-of-line)
-;; 	    ;; (define-key evil-normal-state-map (kbd "cpp") 'eval-last-sexp)
-;; 	    ;; (evil-mode 1)
-;; ))
-
-
-(use-package paredit)
-(use-package clojure-mode)
-(use-package cider)
-(use-package markdown-mode)
-(use-package diminish)
-(use-package projectile
-  :diminish projectile-mode
-  :config (projectile-mode)
-  :custom ((projectile-completion-system 'ivy))
-  :bind-keymap ("C-c p" . projectile-command-map)
-  :init
-  (when (file-directory-p "~/src")
-    (setq projectile-project-search-path '("~/src"))
-    (setq projectile-switch-project-action #'projectile-dired)))
-(use-package magit)
-(use-package company :config (global-company-mode))
-
-;; counsel?
-;; ivy? helm?
-;; helpful?
-;; rainbow-delimiters?
-;; which-key? gonna be important for discovering emacs/plugins on the fly.
-;; counsel-projectile?
-;; magit-todos
-;; git-gutter
-;; org-mode? (there's a lot of config in your old config)
-;; org-bullets
-;; markdown-mode
-;; visual-fill-column
-;; typescript-mode
-;; lsp-mode (or potentailly eglot)
-
-;; whitespace-mode? (in-built mode to display whitespace) & whitespace-cleanup?
-;; flyspell-mode? on the fly spell checking (also flyspell-prog-mode for docstrings/strings only)
-;; project.el? p270 allows running cmds based on project root (based on vcs files etc)
-;; nov - epub reader for emacs
-;; hydra?
-;; dump-jump?
-;; include code to use ripgrep where available
-
-(defmacro ifn (fn)
-  `(lambda () (interactive) ,fn))
+;; TODO come back to this.. (run-lisp)
+(setq inferior-lisp-program "clojure")
 
 (defadvice kill-region (before unix-werase activate compile)
   "When called interactively with no active region, delete a single word
@@ -121,6 +38,27 @@
   (interactive
    (if mark-active (list (region-beginning) (region-end))
      (list (save-excursion (backward-word 1) (point)) (point)))))
+
+(require 'package)
+(require 'clojure-mode)
+(require 'inf-clojure)
+
+;; org-tempo adds to the markup, adds emmet
+
+(setq local-packages (concat user-emacs-directory "local-packages.el"))
+
+(if (file-exists-p local-packages)
+    (load local-packages)
+  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                           ("org" . "https://orgmode.org/elpa/")
+                           ("elpa" . "https://elpa.gnu.org/packages/"))))
+
+(defmacro ifn (fn)
+  `(lambda () (interactive) ,fn))
+
+(defmacro ifn-from (from-dir fn)
+  `(lambda () (interactive)
+     (let ((default-directory ,from-dir)) (call-interactively ,fn))))
 
 (defun close-window-or-frame ()
   "Used to kill the current 'thing' focused on, which may be a
@@ -137,18 +75,20 @@
      `(("M-o" . other-window)
        ("C-c i" . ,(ifn (find-file user-init-file)))
        ("C-c n" . ,(ifn (find-file (concat user-emacs-directory "notes.org"))))
+       ("C-c o" . ,(ifn (find-file (concat user-emacs-directory "org.org"))))
+       ("C-c O" . ,(ifn-from "~/.emacs.d/org/" 'find-file))
+       ("C-c P" . ,(ifn-from "~/src/" 'find-file))
+       ("C-c a" . ,(ifn (org-agenda nil "d")))
+       ("C-c A" . org-agenda)
        ("C-c l" . ,(ifn (find-file "~/src")))
-       ("C-c g" . magit)
-       ("C-c p" . projectile-find-file)
-       ("C-c P" . projectile-grep)
        ("C-h" . delete-backward-char)
+       ("M-s" . save-buffer) ;; this is easier but maybe C-x, C-s is just meant to be (it's hardwired into my fingers)
+       ("C-M-s" . isearch-forward-symbol-at-point)
        ("M-i" . imenu)
        ("M-j" . ,(ifn (join-line -1)))
        ("M-H" . ,help-map)
        ("M-/" . comment-dwim)
        ("C-;" . company-capf)
-       ("M-k" . paredit-forward-barf-sexp)
-       ("M-l" . paredit-forward-slurp-sexp)
        ("M-O" . tab-bar-switch-to-recent-tab)
        ("M-;" . ,frame-map)
        ("M-; o" . delete-other-windows)
@@ -166,9 +106,22 @@
        ("M-; 7" . ,(ifn (tab-bar-select-tab 7)))
        ("M-; 8" . ,(ifn (tab-bar-select-tab 8)))
        ("M-; 9" . ,(ifn (tab-bar-select-tab 9)))
-       ("M-RET" . toggle-frame-fullscreen)
+       ;; ("M-RET" . toggle-frame-fullscreen)
        ("M-F" . toggle-frame-fullscreen)))
   (global-set-key (kbd (car binding)) (cdr binding)))
+
+;; alien mappings
+(dolist
+    (binding
+     `(
+       ("C-c g" . magit)
+       ("C-c p" . projectile-find-file)
+       ;; ("C-c P" . projectile-grep) ;; needs a diff keybindings tbh.
+       ("C-;" . company-capf)
+       ("M-k" . paredit-forward-barf-sexp)
+       ("M-l" . paredit-forward-slurp-sexp)))
+  (global-set-key (kbd (car binding)) (cdr binding)))
+
 
 (setq display-fill-column-indicator-column 100)
 (display-fill-column-indicator-mode 1)
@@ -176,3 +129,67 @@
 (let ((local-config (concat user-emacs-directory "local.el")))
   (when (file-exists-p local-config)
     (load local-config)))
+
+;; Org Mode
+
+(setq mb-org-file (concat user-emacs-directory "org.org"))
+
+
+;; TODO it would be nice to generate this based on the
+;; user-emacs-directory var
+(setq org-agenda-files '("~/.emacs.d/org.org"
+			 "~/.emacs.d/org")
+      org-agenda-start-on-weekday nil ; show the next 7 days
+      org-agenda-start-day "-3d"
+      org-agenda-span 14
+      org-tags-column 80
+      org-agenda-category-filter-preset '("-shopping")
+      org-deadline-warning-days 31
+      org-agenda-start-with-log-mode t
+      org-log-done 'time
+      org-log-into-drawer t
+      org-agenda-todo-keyword-format "" ;; don't tell me the todo state in agenda view.
+      org-todo-keywords
+      '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+	(sequence "BACKLOG(b)" "PLAN(p)" "COMPLETED(c)" "|" "RELEASED(r)" "CANCELLED(k@)"))
+      org-agenda-custom-commands
+      '(("d" "Dashboard"
+	 ((agenda "" ((org-deadline-warning-days 31)))
+	  (todo "NEXT"
+		((org-agenda-overriding-header "Next Tasks")))
+	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))
+	  (todo "TODO"
+		((org-agenda-overriding-header "All todos")))))
+	("l" "Shopping List"
+	 (
+	  (todo "" ((org-agenda-overriding-header "Shopping List")
+		    (org-agenda-category-filter-preset '("+shopping"))))
+	  ))
+	("D" "Development"
+	 ((agenda "" ((org-deadline-warning-days 31)))
+	  (todo "NEXT"
+		((org-agenda-overriding-header "Next Tasks")))
+	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))
+	  (todo "TODO"
+		((org-agenda-overriding-header "All todos")))))
+	)
+      )
+	    
+
+;; TODO part of emacs.. I should defer loading this until an org window is opened
+(require 'org-tempo)
+;; (require 'org-bullets)
+(setq org-src-fontify-natively t)
+(setq org-src-tab-acts-natively t)
+
+;; TODO this is not a part of emacs, it will cause startup to fail if
+;; not here it'd be nice to warn the user if something is unavailable
+;; and let them know they can try to update it. (esp. in environments
+;; which may not have internet access)
+(require 'paredit)
+
+;; which key?
+;; ivy?/counsel?
+;; git gutter?
+;; flycheck/flymake? lsp client?
+

@@ -7,19 +7,30 @@
 
 ;; (fns on the fly) config > 
 
-(setq gc-cons-threshold 32000000     ;; 32 MB
-      garbage-collection-messages t) ;; indicator of thrashing
-
 ;; default vars
 (defconst *is-a-mac* (eq system-type 'darwin))
 
-;; default settings
+;; default 'system' settings
+(let ((normal-gc-cons-threshold (* 20 1024 1024))
+      (init-gc-cons-threshold (* 128 1024 1024)))
+  (setq gc-cons-threshold init-gc-cons-threshold)
+  (add-hook 'emacs-startup-hook
+            (lambda () (setq gc-cons-threshold normal-gc-cons-threshold))))
+
 (setq fill-column 80
       display-fill-column-indicator-column 100
       inhibit-startup-screen t
       bidi-paragraph-direction 'left-to-right
       bidi-inhibit-bpa t
-      custom-file (concat user-emacs-directory "custom.el"))
+      custom-file (concat user-emacs-directory "custom.el")
+      package-enable-at-startup nil
+      garbage-collection-messages t)
+
+(when *is-a-mac*
+  (setq mac-command-modifier 'meta
+	mac-option-modifier 'none))
+
+(require 'local nil t) ;; optionally load a local.el
 
 ;; default modes
 (defmacro set-mode (mode value)
@@ -53,15 +64,12 @@
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 
+;; default 'editor' settings
 (defun code-config ()
   (display-line-numbers-mode 1))
 
 (dolist (hook '(prog-mode-hook css-mode-hook)) (add-hook hook 'code-config))
 
-
-(when *is-a-mac*
-  (setq mac-command-modifier 'meta)
-  (setq mac-option-modifier 'none))
 
 ;; TODO come back to this.. (run-lisp)
 (setq inferior-lisp-program "clojure")
@@ -153,10 +161,6 @@
 (setq display-fill-column-indicator-column 100)
 (display-fill-column-indicator-mode 1)
 
-(let ((local-config (concat user-emacs-directory "local.el")))
-  (when (file-exists-p local-config)
-    (load local-config)))
-
 ;; Org Mode
 
 (setq mb-org-file (concat user-emacs-directory "org.org"))
@@ -189,8 +193,11 @@
 		((org-agenda-overriding-header "All todos")))))
 	("l" "Shopping List"
 	 (
-	  (todo "" ((org-agenda-overriding-header "Shopping List")
-		    (org-agenda-category-filter-preset '("+shopping"))))
+	  ;; TODO remove shopping: prefix
+	  ;; TODO only show stuff that is scheduled for this coming week/next 7 days
+	  (search "*" ((org-agenda-overriding-header "Shopping List\n")
+		       (org-agenda-prefix-format '((search . " - ")))
+		       (org-agenda-category-filter-preset '("+shopping"))))
 	  ))
 	("D" "Development"
 	 ((agenda "" ((org-deadline-warning-days 31)))

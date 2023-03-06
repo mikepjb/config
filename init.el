@@ -1,29 +1,63 @@
-;; not organised.. TODO organise!
-(menu-bar-mode -1)
-(tool-bar-mode -1)
+;; -*- lexical-binding: t -*-
+;; structure
 
-(fido-mode 1)
-(electric-pair-mode 1)
+;; fns
 
-(when (display-graphic-p)
-    (scroll-bar-mode -1))
+;; main?
 
-(setq inhibit-startup-screen t
-      bidi-paragraph-diretion 'left-to-right
-      bidi-inhibit-bpa t)
+;; (fns on the fly) config > 
 
-(setq custom-file (concat user-emacs-directory "custom.el"))
+(setq gc-cons-threshold 32000000     ;; 32 MB
+      garbage-collection-messages t) ;; indicator of thrashing
 
-(when window-system (set-frame-size (selected-frame) 200 80))
-
-(dolist (mode '(org-mode-hook
-		term-mode-hook
-		help-mode-hook
-		helpful-mode-hook
-		eshell-mode-hook))
-  (add-hook mode (lambda () (display-line-numbers-mode 0))))
-
+;; default vars
 (defconst *is-a-mac* (eq system-type 'darwin))
+
+;; default settings
+(setq fill-column 80
+      display-fill-column-indicator-column 100
+      inhibit-startup-screen t
+      bidi-paragraph-direction 'left-to-right
+      bidi-inhibit-bpa t
+      custom-file (concat user-emacs-directory "custom.el"))
+
+;; default modes
+(defmacro set-mode (mode value)
+  `(funcall ,mode (if (eq ,value :enable) 1 -1)))
+
+(dolist (mode '(electric-pair-mode
+		fido-mode
+		show-paren-mode
+		column-number-mode
+		global-auto-revert-mode
+		display-fill-column-indicator-mode
+		savehist-mode))
+  (set-mode mode :enable))
+
+(dolist (mode '(menu-bar-mode
+		tool-bar-mode
+		electric-indent-mode)) ;; weirdly enough this intentionally disables auto-indent for C-j
+  (set-mode mode :disable))
+
+;; default behaviour
+(defadvice kill-region (before unix-werase activate compile)
+  "When called interactively with no active region, delete a single word
+    backwards instead."
+  (interactive
+   (if mark-active (list (region-beginning) (region-end))
+     (list (save-excursion (backward-word 1) (point)) (point)))))
+
+(when window-system
+    (scroll-bar-mode -1)
+    (set-frame-size (selected-frame) 200 80))
+
+(defalias 'yes-or-no-p 'y-or-n-p)
+
+(defun code-config ()
+  (display-line-numbers-mode 1))
+
+(dolist (hook '(prog-mode-hook css-mode-hook)) (add-hook hook 'code-config))
+
 
 (when *is-a-mac*
   (setq mac-command-modifier 'meta)
@@ -31,13 +65,6 @@
 
 ;; TODO come back to this.. (run-lisp)
 (setq inferior-lisp-program "clojure")
-
-(defadvice kill-region (before unix-werase activate compile)
-  "When called interactively with no active region, delete a single word
-    backwards instead."
-  (interactive
-   (if mark-active (list (region-beginning) (region-end))
-     (list (save-excursion (backward-word 1) (point)) (point)))))
 
 (require 'package)
 (require 'clojure-mode)
@@ -188,8 +215,13 @@
 ;; which may not have internet access)
 (require 'paredit)
 
+(load-theme 'whiteboard t)
+
 ;; which key?
 ;; ivy?/counsel?
 ;; git gutter?
 ;; flycheck/flymake? lsp client?
-
+;; ripgrep? using grep in emacs?
+;; diminish?
+;; cider? inferior-lisp?
+;; nginx?

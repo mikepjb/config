@@ -7,3 +7,4 @@ local.el
 projectile-bookmarks.eld
 transient/
 eshell/
+history

@@ -1,11 +1,4 @@
 ;; -*- lexical-binding: t -*-
-;; structure
-
-;; fns
-
-;; main?
-
-;; (fns on the fly) config > 
 
 ;; default vars
 (defconst *is-a-mac* (eq system-type 'darwin))
@@ -64,29 +57,95 @@
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 
+;; package configuration
+;; TODO it would be nice to generate this based on the
+;; user-emacs-directory var
+(setq org-agenda-files '("~/.emacs.d/org.org"
+			 "~/.emacs.d/org")
+      org-agenda-start-on-weekday nil ; show the next 7 days
+      org-agenda-start-day "-3d"
+      org-agenda-span 14
+      org-tags-column 80
+      org-agenda-category-filter-preset '("-shopping")
+      org-deadline-warning-days 31
+      org-agenda-start-with-log-mode t
+      org-log-done 'time
+      org-log-into-drawer t
+      org-agenda-todo-keyword-format "" ;; don't tell me the todo state in agenda view.
+      org-todo-keywords
+      '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!) AXED(x)")
+	(sequence "BACKLOG(b)" "PLAN(p)" "COMPLETED(c)" "|" "RELEASED(r)" "CANCELLED(k@)"))
+      org-agenda-custom-commands
+      '(("d" "Dashboard"
+	 ((agenda "" ((org-deadline-warning-days 31)))
+	  (todo "NEXT"
+		((org-agenda-overriding-header "Next Tasks")))
+	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))
+	  (todo "TODO"
+		((org-agenda-overriding-header "All todos")))))
+	("l" "Shopping List"
+	 (
+	  ;; TODO remove shopping: prefix
+	  ;; TODO only show stuff that is scheduled for this coming week/next 7 days
+	  (search "*" ((org-agenda-overriding-header "Shopping List\n")
+		       (org-agenda-prefix-format '((search . " - ")))
+		       (org-agenda-category-filter-preset '("+shopping"))))
+	  ))
+	("D" "Development"
+	 ((agenda "" ((org-deadline-warning-days 31)))
+	  (todo "NEXT"
+		((org-agenda-overriding-header "Next Tasks")))
+	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))
+	  (todo "TODO"
+		((org-agenda-overriding-header "All todos")))))
+	)
+      )
+
+;; TODO come back to this.. (run-lisp)
+;; (setq inferior-lisp-program "clojure")
+
+(require 'package)
+
+;; check there isn't a local override
+(when (not (member "melpa" (mapcar 'car package-archives)))
+  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                           ("org" . "https://orgmode.org/elpa/")
+                           ("elpa" . "https://elpa.gnu.org/packages/"))))
+
+
+(setq config/internal-package-list
+      '(org-tempo))
+
+(setq config/external-package-list
+      '(haskell-mode
+	clojure-mode
+	cider ;; inferior-lisp? inf-clojure? only if you can get cljs working
+	paredit))
+
+(defun config/load-packages (pkgs)
+  (dolist (pkg pkgs)
+    (if (listp pkg)
+	(when (require (car pkg) nil t)
+	  (when (cdr pkg) (cdr pkg)))
+      (require pkg nil t))))
+
+(config/load-packages config/internal-package-list)
+(config/load-packages config/external-package-list)
+
+(defun config/update-packages ()
+  (interactive)
+  (package-refresh-contents)
+  (dolist (pkg config/external-package-list)
+    (if (listp pkg)
+      (when (not (require (car pkg) nil t))
+	(package-install (car pkg)))
+      (package-install pkg))))
+
 ;; default 'editor' settings
 (defun code-config ()
   (display-line-numbers-mode 1))
 
 (dolist (hook '(prog-mode-hook css-mode-hook)) (add-hook hook 'code-config))
-
-
-;; TODO come back to this.. (run-lisp)
-(setq inferior-lisp-program "clojure")
-
-(require 'package)
-(require 'clojure-mode)
-(require 'inf-clojure)
-
-;; org-tempo adds to the markup, adds emmet
-
-(setq local-packages (concat user-emacs-directory "local-packages.el"))
-
-(if (file-exists-p local-packages)
-    (load local-packages)
-  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                           ("org" . "https://orgmode.org/elpa/")
-                           ("elpa" . "https://elpa.gnu.org/packages/"))))
 
 (defmacro ifn (fn)
   `(lambda () (interactive) ,fn))
@@ -161,66 +220,20 @@
 (setq display-fill-column-indicator-column 100)
 (display-fill-column-indicator-mode 1)
 
-;; Org Mode
 
-(setq mb-org-file (concat user-emacs-directory "org.org"))
-
-
-;; TODO it would be nice to generate this based on the
-;; user-emacs-directory var
-(setq org-agenda-files '("~/.emacs.d/org.org"
-			 "~/.emacs.d/org")
-      org-agenda-start-on-weekday nil ; show the next 7 days
-      org-agenda-start-day "-3d"
-      org-agenda-span 14
-      org-tags-column 80
-      org-agenda-category-filter-preset '("-shopping")
-      org-deadline-warning-days 31
-      org-agenda-start-with-log-mode t
-      org-log-done 'time
-      org-log-into-drawer t
-      org-agenda-todo-keyword-format "" ;; don't tell me the todo state in agenda view.
-      org-todo-keywords
-      '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-	(sequence "BACKLOG(b)" "PLAN(p)" "COMPLETED(c)" "|" "RELEASED(r)" "CANCELLED(k@)"))
-      org-agenda-custom-commands
-      '(("d" "Dashboard"
-	 ((agenda "" ((org-deadline-warning-days 31)))
-	  (todo "NEXT"
-		((org-agenda-overriding-header "Next Tasks")))
-	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))
-	  (todo "TODO"
-		((org-agenda-overriding-header "All todos")))))
-	("l" "Shopping List"
-	 (
-	  ;; TODO remove shopping: prefix
-	  ;; TODO only show stuff that is scheduled for this coming week/next 7 days
-	  (search "*" ((org-agenda-overriding-header "Shopping List\n")
-		       (org-agenda-prefix-format '((search . " - ")))
-		       (org-agenda-category-filter-preset '("+shopping"))))
-	  ))
-	("D" "Development"
-	 ((agenda "" ((org-deadline-warning-days 31)))
-	  (todo "NEXT"
-		((org-agenda-overriding-header "Next Tasks")))
-	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))
-	  (todo "TODO"
-		((org-agenda-overriding-header "All todos")))))
-	)
-      )
-	    
-
-;; TODO part of emacs.. I should defer loading this until an org window is opened
-(require 'org-tempo)
-;; (require 'org-bullets)
-(setq org-src-fontify-natively t)
-(setq org-src-tab-acts-natively t)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ;; TODO part of emacs.. I should defer loading this until an org window is opened ;;
+;; (require 'org-tempo)								     ;;
+;; ;; (require 'org-bullets)							     ;;
+;; (setq org-src-fontify-natively t)						     ;;
+;; (setq org-src-tab-acts-natively t)						     ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO this is not a part of emacs, it will cause startup to fail if
 ;; not here it'd be nice to warn the user if something is unavailable
 ;; and let them know they can try to update it. (esp. in environments
 ;; which may not have internet access)
-(require 'paredit)
+;; (require 'paredit)
 
 (load-theme 'whiteboard t)
 
@@ -232,3 +245,5 @@
 ;; diminish?
 ;; cider? inferior-lisp?
 ;; nginx?
+
+;; gruvbox (has dark/light)

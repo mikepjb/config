@@ -40,7 +40,7 @@
 
 (dolist (mode '(menu-bar-mode
 		tool-bar-mode
-		electric-indent-mode)) ;; weirdly enough this intentionally disables auto-indent for C-j
+		electric-indent-mode)) ;; enabling this, disables indent for C-j
   (set-mode mode :disable))
 
 ;; default behaviour
@@ -84,13 +84,10 @@
 	  (todo "TODO"
 		((org-agenda-overriding-header "All todos")))))
 	("l" "Shopping List"
-	 (
-	  ;; TODO remove shopping: prefix
-	  ;; TODO only show stuff that is scheduled for this coming week/next 7 days
-	  (search "*" ((org-agenda-overriding-header "Shopping List\n")
-		       (org-agenda-prefix-format '((search . " - ")))
-		       (org-agenda-category-filter-preset '("+shopping"))))
-	  ))
+	 ((tags "SCHEDULED<\"<today>\""
+		  ((org-agenda-overriding-header "Shopping List\n")
+		   (org-agenda-prefix-format '((tags . " - ")))
+		   (org-agenda-category-filter-preset '("+shopping"))))))
 	("D" "Development"
 	 ((agenda "" ((org-deadline-warning-days 31)))
 	  (todo "NEXT"
@@ -112,13 +109,13 @@
                            ("org" . "https://orgmode.org/elpa/")
                            ("elpa" . "https://elpa.gnu.org/packages/"))))
 
-
 (setq config/internal-package-list
-      '(org-tempo))
+      '(org-tempo
+	org-habit))
 
 (setq config/external-package-list
-      '(haskell-mode
-	clojure-mode
+      '(clojure-mode
+	racket-mode
 	cider ;; inferior-lisp? inf-clojure? only if you can get cljs working
 	paredit))
 

@@ -28,6 +28,7 @@
       bidi-inhibit-bpa t
       custom-file (concat user-emacs-directory "custom.el")
       package-enable-at-startup nil
+      ring-bell-function nil
       garbage-collection-messages t)
 
 (when *is-a-mac*
@@ -55,7 +56,6 @@
 		show-paren-mode
 		column-number-mode
 		global-auto-revert-mode
-		display-fill-column-indicator-mode
 		savehist-mode))
   (set-mode mode :enable))
 
@@ -145,7 +145,9 @@
       (package-install pkg))))
 
 (defun code-config ()
-  (display-line-numbers-mode 1))
+  (display-line-numbers-mode 1)
+  (display-fill-column-indicator-mode 1)
+  (hl-line-mode 1))
 
 (dolist (hook '(prog-mode-hook css-mode-hook)) (add-hook hook 'code-config))
 
@@ -160,8 +162,7 @@
 		  racket-mode-hook))
     (add-hook hook #'enable-paredit-mode))
 
-  (add-hook paredit-mode-hook
-	    (define-key paredit-mode-map (kbd "M-;") nil)))
+  (eval-after-load "paredit" (define-key paredit-mode-map (kbd "M-;") nil)))
 
 (when (require 'inf-clojure nil t)
   (defun cljs-node-repl ()

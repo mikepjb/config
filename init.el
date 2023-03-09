@@ -21,6 +21,7 @@
       tab-bar-close-button-show nil
       tab-bar-new-button-show nil
       fill-column 80
+      ido-enable-flex-matching t
       display-fill-column-indicator-column 100
       inhibit-startup-screen t
       bidi-paragraph-direction 'left-to-right

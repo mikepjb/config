@@ -3,14 +3,24 @@
 ;; default vars
 (defconst *is-a-mac* (eq system-type 'darwin))
 
-;; default 'system' settings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; default system settings   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (let ((normal-gc-cons-threshold (* 20 1024 1024))
       (init-gc-cons-threshold (* 128 1024 1024)))
   (setq gc-cons-threshold init-gc-cons-threshold)
   (add-hook 'emacs-startup-hook
             (lambda () (setq gc-cons-threshold normal-gc-cons-threshold))))
 
-(setq fill-column 80
+(setq native-comp-deferred-compilation t
+      native-comp-async-query-on-exit t
+      native-comp-async-jobs-number 4
+      native-comp-async-report-warnings-errors nil
+      tab-bar-show 1
+      tab-bar-close-button-show nil
+      tab-bar-new-button-show nil
+      fill-column 80
       display-fill-column-indicator-column 100
       inhibit-startup-screen t
       bidi-paragraph-direction 'left-to-right
@@ -23,9 +33,19 @@
   (setq mac-command-modifier 'meta
 	mac-option-modifier 'none))
 
-(require 'local nil t) ;; optionally load a local.el
+(defadvice kill-region (before unix-werase activate compile)
+  "When called interactively with no active region, delete a single word
+    backwards instead."
+  (interactive
+   (if mark-active (list (region-beginning) (region-end))
+     (list (save-excursion (backward-word 1) (point)) (point)))))
 
-;; default modes
+(when window-system
+    (scroll-bar-mode -1)
+    (set-frame-size (selected-frame) 200 80))
+
+(defalias 'yes-or-no-p 'y-or-n-p)
+
 (defmacro set-mode (mode value)
   `(funcall ,mode (if (eq ,value :enable) 1 -1)))
 
@@ -43,25 +63,14 @@
 		electric-indent-mode)) ;; enabling this, disables indent for C-j
   (set-mode mode :disable))
 
-;; default behaviour
-(defadvice kill-region (before unix-werase activate compile)
-  "When called interactively with no active region, delete a single word
-    backwards instead."
-  (interactive
-   (if mark-active (list (region-beginning) (region-end))
-     (list (save-excursion (backward-word 1) (point)) (point)))))
+(require 'local nil t) ;; optionally load a local.el
 
-(when window-system
-    (scroll-bar-mode -1)
-    (set-frame-size (selected-frame) 200 80))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; package settings             ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defalias 'yes-or-no-p 'y-or-n-p)
-
-;; package configuration
-;; TODO it would be nice to generate this based on the
-;; user-emacs-directory var
-(setq org-agenda-files '("~/.emacs.d/org.org"
-			 "~/.emacs.d/org")
+(setq org-agenda-files `(,(concat user-emacs-directory "org.org")
+			 ,(concat user-emacs-directory "org"))
       org-agenda-start-on-weekday nil ; show the next 7 days
       org-agenda-start-day "-3d"
       org-agenda-span 14
@@ -94,17 +103,11 @@
 		((org-agenda-overriding-header "Next Tasks")))
 	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))
 	  (todo "TODO"
-		((org-agenda-overriding-header "All todos")))))
-	)
-      )
-
-;; TODO come back to this.. (run-lisp)
-;; (setq inferior-lisp-program "clojure")
+		((org-agenda-overriding-header "All todos")))))))
 
 (require 'package)
 
-;; check there isn't a local override
-(when (not (member "melpa" (mapcar 'car package-archives)))
+(when (not (member "melpa" (mapcar 'car package-archives))) ;; check there isn't a local override
   (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                            ("org" . "https://orgmode.org/elpa/")
                            ("elpa" . "https://elpa.gnu.org/packages/"))))
@@ -115,15 +118,17 @@
 
 (setq config/external-package-list
       '(clojure-mode
-	racket-mode
-	cider ;; inferior-lisp? inf-clojure? only if you can get cljs working
+	racket-mode ;; run this too `raco pkg install --auto drracket'
+	(company . (global-company-mode t)) ;; might be part of emacs?
+	inf-clojure
+	;;cider ;; inferior-lisp? inf-clojure? only if you can get cljs working
 	paredit))
 
 (defun config/load-packages (pkgs)
   (dolist (pkg pkgs)
     (if (listp pkg)
 	(when (require (car pkg) nil t)
-	  (when (cdr pkg) (cdr pkg)))
+	  (eval (cdr pkg)))
       (require pkg nil t))))
 
 (config/load-packages config/internal-package-list)
@@ -138,11 +143,33 @@
 	(package-install (car pkg)))
       (package-install pkg))))
 
-;; default 'editor' settings
 (defun code-config ()
   (display-line-numbers-mode 1))
 
 (dolist (hook '(prog-mode-hook css-mode-hook)) (add-hook hook 'code-config))
+
+(when (require 'paredit nil t)
+  (dolist (hook '(emacs-lisp-mode-hook
+		  eval-expression-minibuffer-setup-hook
+		  ielm-mode-hook
+		  lisp-mode-hook
+		  lisp-interaction-mode-hook
+		  clojure-mode-hook
+		  scheme-mode-hook
+		  racket-mode-hook))
+    (add-hook hook #'enable-paredit-mode))
+
+  (add-hook paredit-mode-hook
+	    (define-key paredit-mode-map (kbd "M-;") nil)))
+
+(when (require 'inf-clojure nil t)
+  (defun cljs-node-repl ()
+    (interactive)
+    (inf-clojure "clj -M -m cljs.main -co build.edn -re node -r")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; keybindings                  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro ifn (fn)
   `(lambda () (interactive) ,fn))
@@ -163,15 +190,22 @@
 
 (dolist
     (binding
-     `(("M-o" . other-window)
+     `(
+       ("M-o" . other-window)
        ("C-c i" . ,(ifn (find-file user-init-file)))
        ("C-c n" . ,(ifn (find-file (concat user-emacs-directory "notes.org"))))
        ("C-c o" . ,(ifn (find-file (concat user-emacs-directory "org.org"))))
        ("C-c O" . ,(ifn-from "~/.emacs.d/org/" 'find-file))
-       ("C-c P" . ,(ifn-from "~/src/" 'find-file))
+       ("C-c k" . ,(ifn-from "~/src/knowledge/src/" 'find-file))
+       ("C-c P" . projectile-ripgrep)
        ("C-c a" . ,(ifn (org-agenda nil "d")))
        ("C-c A" . org-agenda)
-       ("C-c l" . ,(ifn (find-file "~/src")))
+       ("C-c l" . ,(ifn-from "~/src/" 'find-file))
+       ("C-c g" . magit)
+       ("C-c p" . projectile-find-file)
+       ("C-;" . company-capf)
+       ("M-k" . paredit-forward-barf-sexp)
+       ("M-l" . paredit-forward-slurp-sexp)
        ("C-h" . delete-backward-char)
        ("M-s" . save-buffer) ;; this is easier but maybe C-x, C-s is just meant to be (it's hardwired into my fingers)
        ("C-M-s" . isearch-forward-symbol-at-point)
@@ -179,7 +213,6 @@
        ("M-j" . ,(ifn (join-line -1)))
        ("M-H" . ,help-map)
        ("M-/" . comment-dwim)
-       ("C-;" . company-capf)
        ("M-O" . tab-bar-switch-to-recent-tab)
        ("M-;" . ,frame-map)
        ("M-; o" . delete-other-windows)
@@ -188,6 +221,7 @@
        ("M-; v" . ,(ifn (progn (split-window-vertically) (other-window 1))))
        ("M-; s" . ,(ifn (progn (split-window-horizontally) (other-window 1))))
        ("M-; x" . close-window-or-frame)
+       ("M-; q" . close-window-or-frame)
        ("M-; 1" . ,(ifn (tab-bar-select-tab 1)))
        ("M-; 2" . ,(ifn (tab-bar-select-tab 2)))
        ("M-; 3" . ,(ifn (tab-bar-select-tab 3)))
@@ -201,46 +235,4 @@
        ("M-F" . toggle-frame-fullscreen)))
   (global-set-key (kbd (car binding)) (cdr binding)))
 
-;; alien mappings
-(dolist
-    (binding
-     `(
-       ("C-c g" . magit)
-       ("C-c p" . projectile-find-file)
-       ;; ("C-c P" . projectile-grep) ;; needs a diff keybindings tbh.
-       ("C-;" . company-capf)
-       ("M-k" . paredit-forward-barf-sexp)
-       ("M-l" . paredit-forward-slurp-sexp)))
-  (global-set-key (kbd (car binding)) (cdr binding)))
-
-
-(setq display-fill-column-indicator-column 100)
-(display-fill-column-indicator-mode 1)
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ;; TODO part of emacs.. I should defer loading this until an org window is opened ;;
-;; (require 'org-tempo)								     ;;
-;; ;; (require 'org-bullets)							     ;;
-;; (setq org-src-fontify-natively t)						     ;;
-;; (setq org-src-tab-acts-natively t)						     ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; TODO this is not a part of emacs, it will cause startup to fail if
-;; not here it'd be nice to warn the user if something is unavailable
-;; and let them know they can try to update it. (esp. in environments
-;; which may not have internet access)
-;; (require 'paredit)
-
 (load-theme 'whiteboard t)
-
-;; which key?
-;; ivy?/counsel?
-;; git gutter?
-;; flycheck/flymake? lsp client?
-;; ripgrep? using grep in emacs?
-;; diminish?
-;; cider? inferior-lisp?
-;; nginx?
-
-;; gruvbox (has dark/light)

@@ -122,6 +122,8 @@
 	racket-mode ;; run this too `raco pkg install --auto drracket'
 	(company . (global-company-mode t)) ;; might be part of emacs?
 	inf-clojure
+	projectile
+	projectile-ripgrep
 	;;cider ;; inferior-lisp? inf-clojure? only if you can get cljs working
 	paredit))
 
@@ -236,5 +238,14 @@
        ;; ("M-RET" . toggle-frame-fullscreen)
        ("M-F" . toggle-frame-fullscreen)))
   (global-set-key (kbd (car binding)) (cdr binding)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; user functions               ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun update-git-submodules ()
+  (interactive)
+  (async-shell-command "git submodule update --init"))
+
 
 (load-theme 'whiteboard t)

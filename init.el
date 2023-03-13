@@ -22,6 +22,7 @@
       tab-bar-new-button-show nil
       fill-column 80
       ido-enable-flex-matching t
+      ;; TODO this is not a good place for this, it isn't being respected when the code hook loads.. guess it just gets overwritten.
       display-fill-column-indicator-column 100
       inhibit-startup-screen t
       bidi-paragraph-direction 'left-to-right
@@ -73,7 +74,7 @@
 (setq org-agenda-files `(,(concat user-emacs-directory "org.org")
 			 ,(concat user-emacs-directory "org"))
       org-agenda-start-on-weekday nil ; show the next 7 days
-      org-agenda-start-day "-3d"
+      org-agenda-start-day "0d"
       org-agenda-span 14
       org-tags-column 80
       org-agenda-category-filter-preset '("-shopping")
@@ -243,9 +244,16 @@
 ;; user functions               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; this is probably something that magit makes quite easy and isn't
+;; necessary.
 (defun update-git-submodules ()
   (interactive)
   (async-shell-command "git submodule update --init"))
+
+;; only intended for POSIX linux/mac os
+(defun setup-env ()
+  (interactive)
+  (shell-command (concat  "ln -s " user-emacs-directory "bashrc $HOME/.bashrc")))
 
 
 (load-theme 'whiteboard t)

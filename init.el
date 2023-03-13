@@ -13,6 +13,9 @@
   (add-hook 'emacs-startup-hook
             (lambda () (setq gc-cons-threshold normal-gc-cons-threshold))))
 
+(setq-default
+ display-fill-column-indicator-column 100)
+
 (setq native-comp-deferred-compilation t
       native-comp-async-query-on-exit t
       native-comp-async-jobs-number 4
@@ -22,8 +25,6 @@
       tab-bar-new-button-show nil
       fill-column 80
       ido-enable-flex-matching t
-      ;; TODO this is not a good place for this, it isn't being respected when the code hook loads.. guess it just gets overwritten.
-      display-fill-column-indicator-column 100
       inhibit-startup-screen t
       bidi-paragraph-direction 'left-to-right
       bidi-inhibit-bpa t
@@ -81,8 +82,14 @@
       org-deadline-warning-days 31
       org-agenda-start-with-log-mode t
       org-log-done 'time
+      org-ellipsis " ▼"
+      org-hide-emphasis-markers t
+      org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")
       org-log-into-drawer t
+      org-habit-graph-column 60
       org-agenda-todo-keyword-format "" ;; don't tell me the todo state in agenda view.
+      org-refile-targets `((,(concat user-emacs-directory "org/archive.org") :maxlevel . 1)
+			   (,(concat user-emacs-directory "org/index.org") :maxlevel . 1))
       org-todo-keywords
       '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!) AXED(x)")
 	(sequence "BACKLOG(b)" "PLAN(p)" "COMPLETED(c)" "|" "RELEASED(r)" "CANCELLED(k@)"))
@@ -107,6 +114,8 @@
 	  (todo "TODO"
 		((org-agenda-overriding-header "All todos")))))))
 
+(advice-add 'org-refile :after 'org-save-all-org-buffers)
+
 (require 'package)
 
 (when (not (member "melpa" (mapcar 'car package-archives))) ;; check there isn't a local override
@@ -116,10 +125,11 @@
 
 (setq config/internal-package-list
       '(org-tempo
-	org-habit))
+	(org-habit . (add-to-list 'org-modules 'org-habit))))
 
 (setq config/external-package-list
-      '(clojure-mode
+      '((org-bullets . (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+	clojure-mode
 	racket-mode ;; run this too `raco pkg install --auto drracket'
 	(company . (global-company-mode t)) ;; might be part of emacs?
 	inf-clojure
@@ -142,10 +152,7 @@
   (interactive)
   (package-refresh-contents)
   (dolist (pkg config/external-package-list)
-    (if (listp pkg)
-      (when (not (require (car pkg) nil t))
-	(package-install (car pkg)))
-      (package-install pkg))))
+    (package-install (if (listp pkg) (car pkg) pkg))))
 
 (defun code-config ()
   (display-line-numbers-mode 1)
@@ -253,7 +260,8 @@
 ;; only intended for POSIX linux/mac os
 (defun setup-env ()
   (interactive)
+  ;; TODO .bash_profile? > . ~/.bashrc
   (shell-command (concat  "ln -s " user-emacs-directory "bashrc $HOME/.bashrc")))
 
 
-(load-theme 'whiteboard t)
+(load-theme 'hypalynx t)

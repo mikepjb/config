@@ -1,7 +1,32 @@
 ;; -*- lexical-binding: t -*-
 
-;; default vars
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; default system variables  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *is-a-mac* (eq system-type 'darwin))
+
+(defconst *fixed-font*
+  (cond ((x-list-fonts "Recursive Mono Linear Static") "Recursive Mono Linear Static")
+	((x-list-fonts "Monaco") "Monaco") ;; defaul mac os
+	((x-list-fonts "Menlo") "Menlo") ;; mac os with vertical line glyph
+	((x-list-fonts "Monospace") "Monospace") ;; linux deja vu sans mono default
+	(t nil)))
+
+(defconst *variable-font*
+  (cond ((x-list-fonts "Recursive") "Recursive")
+	((x-list-fonts "Novaletra Serif CF") "Novaletra Serif CF")
+	((x-list-fonts "Georgia") "Georgia")
+	((x-list-fonts "Sans Serif") "Sans Serif")
+	(t nil)))
+
+(set-face-attribute 'default nil :font *fixed-font* :height 120)
+(set-face-attribute 'fixed-pitch nil :font *fixed-font* :height 120)
+;; TODO resets when you load the theme! think this is because we are
+;; setting fill-column-indicator in both places
+(set-face-attribute 'fill-column-indicator nil :font "Menlo" :height 120)
+(setq-default display-fill-column-indicator-character 9474)
+(set-face-attribute 'variable-pitch nil :font *variable-font* :height 120 :weight 'regular)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; default system settings   ;;
@@ -86,6 +111,8 @@
       org-hide-emphasis-markers t
       org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")
       org-log-into-drawer t
+      org-startup-with-inline-images t
+      org-image-actual-width '(300)
       org-habit-graph-column 60
       org-agenda-todo-keyword-format "" ;; don't tell me the todo state in agenda view.
       org-refile-targets `((,(concat user-emacs-directory "org/archive.org") :maxlevel . 1)
@@ -115,6 +142,8 @@
 		((org-agenda-overriding-header "All todos")))))))
 
 (advice-add 'org-refile :after 'org-save-all-org-buffers)
+(add-hook 'org-mode-hook 'variable-pitch-mode)
+(add-hook 'org-agenda-mode-hook 'variable-pitch-mode)
 
 (require 'package)
 
@@ -124,19 +153,23 @@
                            ("elpa" . "https://elpa.gnu.org/packages/"))))
 
 (setq config/internal-package-list
-      '(org-tempo
+      '(;; (org . (add-hook 'org-mode-hook 'config/org-mode-setup))
+	org-tempo
 	(org-habit . (add-to-list 'org-modules 'org-habit))))
 
 (setq config/external-package-list
       '((org-bullets . (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+	;; (olivetti . (add-hook 'org-mode-hook (lambda () (config/org-mode-olivetti))))
 	clojure-mode
 	racket-mode ;; run this too `raco pkg install --auto drracket'
 	(company . (global-company-mode t)) ;; might be part of emacs?
+	markdown-mode
 	inf-clojure
 	projectile
 	projectile-ripgrep
 	;;cider ;; inferior-lisp? inf-clojure? only if you can get cljs working
-	paredit))
+	paredit
+	ledger-mode))
 
 (defun config/load-packages (pkgs)
   (dolist (pkg pkgs)
@@ -180,6 +213,42 @@
     (inf-clojure "clj -M -m cljs.main -co build.edn -re node -r")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; user functions               ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this is probably something that magit makes quite easy and isn't
+;; necessary.
+(defun update-git-submodules ()
+  (interactive)
+  (async-shell-command "git submodule update --init"))
+
+;; only intended for POSIX linux/mac os
+(defun setup-env ()
+  (interactive)
+  ;; TODO .bash_profile? > . ~/.bashrc
+  (shell-command (concat  "ln -s " user-emacs-directory "bashrc $HOME/.bashrc")))
+
+(defun focus-mode ()
+  (interactive)
+  (setq olivetti-body-width 100)
+  (if (bound-and-true-p focus-enabled)
+      (progn
+	(when (derived-mode-p 'prog-mode)
+	  (display-line-numbers-mode 1)
+	  (display-fill-column-indicator-mode 1))
+	(olivetti-mode -1)
+	(when (not (eq major-mode 'org-mode))
+	  (variable-pitch-mode -1))
+	(setq-local focus-enabled nil))
+    (progn
+      (when (derived-mode-p 'prog-mode)
+	(display-line-numbers-mode -1)
+	(display-fill-column-indicator-mode -1))
+      (olivetti-mode 1)
+      (variable-pitch-mode 1)
+      (setq-local focus-enabled t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; keybindings                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,6 +279,7 @@
        ("C-c O" . ,(ifn-from "~/.emacs.d/org/" 'find-file))
        ("C-c k" . ,(ifn-from "~/src/knowledge/src/" 'find-file))
        ("C-c P" . projectile-ripgrep)
+       ("C-c f" . focus-mode)
        ("C-c a" . ,(ifn (org-agenda nil "d")))
        ("C-c A" . org-agenda)
        ("C-c l" . ,(ifn-from "~/src/" 'find-file))
@@ -246,22 +316,5 @@
        ;; ("M-RET" . toggle-frame-fullscreen)
        ("M-F" . toggle-frame-fullscreen)))
   (global-set-key (kbd (car binding)) (cdr binding)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; user functions               ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; this is probably something that magit makes quite easy and isn't
-;; necessary.
-(defun update-git-submodules ()
-  (interactive)
-  (async-shell-command "git submodule update --init"))
-
-;; only intended for POSIX linux/mac os
-(defun setup-env ()
-  (interactive)
-  ;; TODO .bash_profile? > . ~/.bashrc
-  (shell-command (concat  "ln -s " user-emacs-directory "bashrc $HOME/.bashrc")))
-
 
 (load-theme 'hypalynx t)

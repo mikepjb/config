@@ -103,6 +103,7 @@
    `(hl-line ((,class (:background ,neutral-200))))
    `(cursor ((,class (:background ,blue-800))))
    `(region ((,class (:background ,neutral-300))))
+   `(fill-column-indicator ((,class (:foreground ,neutral-300))))
 
    ;; UI theming
    `(line-number ((,class (:foreground ,neutral-500))))
@@ -126,7 +127,8 @@
    `(org-todo ((,class (:foreground ,red-800 :bold t))))
    `(org-date ((,class (:foreground ,red-800))))
    `(org-ellipsis ((,class (:foreground ,red-800))))
-   `(org-level-1 ((,class (:foreground ,emerald-900))))
+   `(org-level-1 ((,class (:foreground ,emerald-900 :bold t))))
+   `(org-level-2 ((,class (:foreground ,blue-900 :bold t))))
    
 
    ))

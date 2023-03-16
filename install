@@ -29,7 +29,7 @@ git_config() {
 }
 
 mac_deps() {
-  brew install clojure-lsp/brew/clojure-lsp-native
+  brew install clojure-lsp/brew/clojure-lsp-native ledger
 }
 
 git_config

@@ -15,18 +15,18 @@
 
 (defconst *variable-font*
   (cond ((x-list-fonts "Recursive") "Recursive")
+	((x-list-fonts "Recursive Mono Casual Static") "Recursive Mono Casual Static")
 	((x-list-fonts "Novaletra Serif CF") "Novaletra Serif CF")
 	((x-list-fonts "Georgia") "Georgia")
 	((x-list-fonts "Sans Serif") "Sans Serif")
 	(t nil)))
 
-(set-face-attribute 'default nil :font *fixed-font* :height 120)
-(set-face-attribute 'fixed-pitch nil :font *fixed-font* :height 120)
-;; TODO resets when you load the theme! think this is because we are
-;; setting fill-column-indicator in both places
-(set-face-attribute 'fill-column-indicator nil :font "Menlo" :height 120)
-(setq-default display-fill-column-indicator-character 9474)
-(set-face-attribute 'variable-pitch nil :font *variable-font* :height 120 :weight 'regular)
+(defconst *font-size*
+  (if *is-a-mac* 120 100))
+
+(set-face-attribute 'default nil :font *fixed-font* :height *font-size*)
+(set-face-attribute 'fixed-pitch nil :font *fixed-font* :height *font-size*)
+(set-face-attribute 'variable-pitch nil :font *variable-font* :height *font-size* :weight 'regular)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; default system settings   ;;
@@ -39,7 +39,8 @@
             (lambda () (setq gc-cons-threshold normal-gc-cons-threshold))))
 
 (setq-default
- display-fill-column-indicator-column 100)
+ display-fill-column-indicator-column 100
+ ring-bell-function 'ignore)
 
 (setq native-comp-deferred-compilation t
       native-comp-async-query-on-exit t
@@ -160,14 +161,13 @@
 (setq config/external-package-list
       '((org-bullets . (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
 	;; (olivetti . (add-hook 'org-mode-hook (lambda () (config/org-mode-olivetti))))
-	clojure-mode
+	inf-clojure
+	(clojure-mode . (add-hook 'clojure-mode-hook 'inf-clojure-minor-mode))
 	racket-mode ;; run this too `raco pkg install --auto drracket'
 	(company . (global-company-mode t)) ;; might be part of emacs?
 	markdown-mode
-	inf-clojure
 	projectile
 	projectile-ripgrep
-	;;cider ;; inferior-lisp? inf-clojure? only if you can get cljs working
 	paredit
 	ledger-mode))
 
@@ -190,7 +190,8 @@
 (defun code-config ()
   (display-line-numbers-mode 1)
   (display-fill-column-indicator-mode 1)
-  (hl-line-mode 1))
+  (hl-line-mode 1)
+  (setq-local show-trailing-whitespace t))
 
 (dolist (hook '(prog-mode-hook css-mode-hook)) (add-hook hook 'code-config))
 
@@ -210,7 +211,13 @@
 (when (require 'inf-clojure nil t)
   (defun cljs-node-repl ()
     (interactive)
-    (inf-clojure "clj -M -m cljs.main -co build.edn -re node -r")))
+    (inf-clojure "clojure -M -m cljs.main -co build.edn -re node -r"))
+
+  ;; my experiment on a socket repl..
+  (defun inf-clojure-socket ()
+    (interactive)
+    (async-shell-command "clojure -J-Dclojure.server.repl=\"{:port 5555 :accept clojure.core.server/repl}\" -Mdev")
+    (inf-clojure-connect "localhost" 5555)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; user functions               ;;

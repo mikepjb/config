@@ -6,6 +6,12 @@
 (defcustom hypalynx-transparent-background nil
   "Make transparent background in terminal. (Workaround)")
 
+(defconst *hypalynx/fill-column-font*
+  (cond ((x-list-fonts "Menlo") "Menlo")
+	((x-list-fonts "Monospace") "Monospace")
+	(t nil)))
+
+
 (let ((class '((class color) (min-colors 89)))
       (neutral-50 "#fafafa")
       (neutral-100 "#f5f5f5")
@@ -98,12 +104,25 @@
 
   (custom-theme-set-faces
    'hypalynx
-   ;; base theming
+
+   ;;;;;;;;;;;;;;;;;;;;;
+   ;; base theming    ;;
+   ;;;;;;;;;;;;;;;;;;;;;
+
    `(default ((,class (:foreground ,neutral-900 :background ,neutral-100))))
    `(hl-line ((,class (:background ,neutral-200))))
    `(cursor ((,class (:background ,blue-800))))
    `(region ((,class (:background ,neutral-300))))
-   `(fill-column-indicator ((,class (:foreground ,neutral-300))))
+   `(highlight ((,class (:background ,neutral-200))))
+   `(trailing-whitespace ((,class (:background ,red-300))))
+
+   ;; N.B this is included to ensure we are using a font that has the
+   ;; line glyph, it would be nicer to have a more concise function
+   ;; for this.
+   (if *hypalynx/fill-column-font*
+       `(fill-column-indicator ((,class (:foreground ,neutral-300
+						     :font ,*hypalynx/fill-column-font*))))
+     `(fill-column-indicator ((,class (:foreground ,neutral-300)))))
 
    ;; UI theming
    `(line-number ((,class (:foreground ,neutral-500))))
@@ -129,9 +148,20 @@
    `(org-ellipsis ((,class (:foreground ,red-800))))
    `(org-level-1 ((,class (:foreground ,emerald-900 :bold t))))
    `(org-level-2 ((,class (:foreground ,blue-900 :bold t))))
-   
-
+   `(org-agenda-structure ((,class (:foreground ,blue-900 :bold t))))
+   `(org-scheduled-previously ((,class (:foreground ,blue-900))))
+   `(org-imminent-deadline ((,class (:foreground ,red-900 :bold t))))
+   `(org-scheduled-today ((,class (:foreground ,emerald-800))))
+   `(org-scheduled ((,class (:foreground ,emerald-800))))
+   `(org-habit-clear-face ((,class (:background ,blue-700 :foreground ,blue-300))))
+   `(org-habit-clear-future-face ((,class (:background ,blue-100))))
+   `(org-habit-alert-future-face ((,class (:background ,amber-200))))
+   `(org-habit-overdue-face ((,class (:background ,red-600 :foreground ,red-300))))
+   `(org-habit-overdue-futureface ((,class (:background ,red-100))))
    ))
+
+
+
 
 ;;;###autoload
 (when load-file-name
@@ -139,4 +169,3 @@
                (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'hypalynx)
-

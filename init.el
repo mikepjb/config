@@ -40,6 +40,7 @@
 
 (setq-default
  display-fill-column-indicator-column 100
+ display-fill-column-indicator-character 9474
  ring-bell-function 'ignore)
 
 (setq native-comp-deferred-compilation t
@@ -57,6 +58,7 @@
       custom-file (concat user-emacs-directory "custom.el")
       package-enable-at-startup nil
       ring-bell-function nil
+      backup-directory-alist `(("." . "~/.saves"))
       garbage-collection-messages t)
 
 (when *is-a-mac*
@@ -143,7 +145,9 @@
 		((org-agenda-overriding-header "All todos")))))))
 
 (advice-add 'org-refile :after 'org-save-all-org-buffers)
-(add-hook 'org-mode-hook 'variable-pitch-mode)
+(add-hook 'org-mode-hook (lambda ()
+			   (variable-pitch-mode)
+			   (org-indent-mode)))
 (add-hook 'org-agenda-mode-hook 'variable-pitch-mode)
 
 (require 'package)
@@ -161,7 +165,7 @@
 (setq config/external-package-list
       '((org-bullets . (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
 	;; (olivetti . (add-hook 'org-mode-hook (lambda () (config/org-mode-olivetti))))
-	inf-clojure
+	;; inf-clojure
 	(clojure-mode . (add-hook 'clojure-mode-hook 'inf-clojure-minor-mode))
 	racket-mode ;; run this too `raco pkg install --auto drracket'
 	(company . (global-company-mode t)) ;; might be part of emacs?
@@ -170,6 +174,9 @@
 	projectile-ripgrep
 	paredit
 	ledger-mode))
+
+;; (require 'inf-clojure (expand-file-name "~/src/inf-clojure/inf-clojure.el"))
+(load (expand-file-name "~/src/inf-clojure/inf-clojure.el"))
 
 (defun config/load-packages (pkgs)
   (dolist (pkg pkgs)
@@ -209,15 +216,8 @@
   (eval-after-load "paredit" (define-key paredit-mode-map (kbd "M-;") nil)))
 
 (when (require 'inf-clojure nil t)
-  (defun cljs-node-repl ()
-    (interactive)
-    (inf-clojure "clojure -M -m cljs.main -co build.edn -re node -r"))
-
-  ;; my experiment on a socket repl..
-  (defun inf-clojure-socket ()
-    (interactive)
-    (async-shell-command "clojure -J-Dclojure.server.repl=\"{:port 5555 :accept clojure.core.server/repl}\" -Mdev")
-    (inf-clojure-connect "localhost" 5555)))
+  (setq inf-clojure-cli-args "-Mdev"
+	inf-clojure-cljs-cli-args "-Mdev"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; user functions               ;;
@@ -269,10 +269,20 @@
 (defun close-window-or-frame ()
   "Used to kill the current 'thing' focused on, which may be a
   lone frame or one of many windows."
-  (interactive
-   (if (eq 1 (length (window-list)))
-       (tab-bar-close-tab)
-     (delete-window))))
+  (interactive)
+  (if (eq 1 (length (window-list)))
+      (tab-bar-close-tab)
+    (delete-window)))
+
+(defun config/inf-clj ()
+  (interactive)
+  (inf-clojure-socket :repl-type "clojure"))
+
+
+(defun config/inf-cljs ()
+  (interactive)
+  (inf-clojure-socket :repl-type "cljs"))
+
 
 (define-prefix-command 'frame-map) ;; prefix for tmux-like actions
 
@@ -292,7 +302,14 @@
        ("C-c l" . ,(ifn-from "~/src/" 'find-file))
        ("C-c g" . magit)
        ("C-c p" . projectile-find-file)
+       ;; inf-clojure bindings
+       ("C-c M-j" . config/inf-clj)
+       ("C-c M-J" . config/inf-cljs)
        ("C-;" . company-capf)
+       ("M-D" . ,(ifn (progn (end-of-line 1)
+			     (open-line 1)
+			     (next-line 1)
+			     (copy-from-above-command))))
        ("M-k" . paredit-forward-barf-sexp)
        ("M-l" . paredit-forward-slurp-sexp)
        ("C-h" . delete-backward-char)
@@ -324,4 +341,6 @@
        ("M-F" . toggle-frame-fullscreen)))
   (global-set-key (kbd (car binding)) (cdr binding)))
 
-(load-theme 'hypalynx t)
+
+(when (require 'hypalynx (concat user-emacs-directory "hypalynx.el") t)
+  (hypalynx-light))

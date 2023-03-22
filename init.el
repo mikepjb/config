@@ -47,6 +47,9 @@
       native-comp-async-query-on-exit t
       native-comp-async-jobs-number 4
       native-comp-async-report-warnings-errors nil
+      scroll-margin 4
+      scroll-step 1
+      scroll-conservatively 10000
       tab-bar-show 1
       tab-bar-close-button-show nil
       tab-bar-new-button-show nil
@@ -102,9 +105,12 @@
 
 (setq org-agenda-files `(,(concat user-emacs-directory "org.org")
 			 ,(concat user-emacs-directory "org"))
-      org-agenda-start-on-weekday nil ; show the next 7 days
+      org-agenda-start-on-weekday nil	; show the next 7 days
       org-agenda-start-day "0d"
       org-agenda-span 14
+      org-timer-default-timer "00:25:00"
+      org-timer-set-hook
+      (lambda () (message "%s" (propertize "pomodoro complete!" 'face 'font-lock-constant-face)))
       org-tags-column 80
       org-agenda-category-filter-preset '("-shopping")
       org-deadline-warning-days 31
@@ -118,8 +124,9 @@
       org-image-actual-width '(300)
       org-habit-graph-column 60
       org-agenda-todo-keyword-format "" ;; don't tell me the todo state in agenda view.
-      org-refile-targets `((,(concat user-emacs-directory "org/archive.org") :maxlevel . 1)
-			   (,(concat user-emacs-directory "org/index.org") :maxlevel . 1))
+      org-refile-targets
+      `((,(concat user-emacs-directory "org/archive.org") :maxlevel . 1)
+	(,(concat user-emacs-directory "org/index.org") :maxlevel . 1))
       org-todo-keywords
       '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!) AXED(x)")
 	(sequence "BACKLOG(b)" "PLAN(p)" "COMPLETED(c)" "|" "RELEASED(r)" "CANCELLED(k@)"))
@@ -133,9 +140,9 @@
 		((org-agenda-overriding-header "All todos")))))
 	("l" "Shopping List"
 	 ((tags "SCHEDULED<\"<today>\""
-		  ((org-agenda-overriding-header "Shopping List\n")
-		   (org-agenda-prefix-format '((tags . " - ")))
-		   (org-agenda-category-filter-preset '("+shopping"))))))
+		((org-agenda-overriding-header "Shopping List\n")
+		 (org-agenda-prefix-format '((tags . " - ")))
+		 (org-agenda-category-filter-preset '("+shopping"))))))
 	("D" "Development"
 	 ((agenda "" ((org-deadline-warning-days 31)))
 	  (todo "NEXT"
@@ -213,7 +220,10 @@
 		  racket-mode-hook))
     (add-hook hook #'enable-paredit-mode))
 
-  (eval-after-load "paredit" (define-key paredit-mode-map (kbd "M-;") nil)))
+  (eval-after-load "paredit"
+    (progn
+      (define-key paredit-mode-map (kbd "M-;") nil)
+      (define-key paredit-mode-map (kbd "M-s") nil))))
 
 (when (require 'inf-clojure nil t)
   (setq inf-clojure-cli-args "-Mdev"
@@ -303,6 +313,9 @@
        ("C-c g" . magit)
        ("C-c p" . projectile-find-file)
        ;; inf-clojure bindings
+       ;; org-timer-set-timer
+       ;; org-timer-pause-or-continue
+       ;; org-timer-stop
        ("C-c M-j" . config/inf-clj)
        ("C-c M-J" . config/inf-cljs)
        ("C-;" . company-capf)

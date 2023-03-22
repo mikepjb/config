@@ -305,6 +305,7 @@
        ("C-c o" . ,(ifn (find-file (concat user-emacs-directory "org.org"))))
        ("C-c O" . ,(ifn-from "~/.emacs.d/org/" 'find-file))
        ("C-c k" . ,(ifn-from "~/src/knowledge/src/" 'find-file))
+       ("C-c K" . ,(ifn-from "~/src/knowledge/src/" 'projectile-ripgrep))
        ("C-c P" . projectile-ripgrep)
        ("C-c f" . focus-mode)
        ("C-c a" . ,(ifn (org-agenda nil "d")))

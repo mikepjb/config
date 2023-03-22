@@ -332,13 +332,13 @@
       (message-header-newsgroups (:foreground ,secondary++ :background unspecified :slant normal))
       (message-separator (:foreground ,rose))
 
-            ;; org-mode (built-in)
+      ;; org-mode (built-in)
       (org-agenda-structure (:foreground ,rose))
       (org-agenda-current-time (:foreground ,tertiary))
       (org-agenda-date (:foreground ,secondary :underline nil))
       (org-agenda-done (:foreground ,primary))
       (org-agenda-dimmed-todo-face (:foreground ,background+++))
-      (org-block (:background ,background+))
+      (org-block (:background ,background))
       (org-block-begin-line (:background ,background :foreground ,background+++ :slant italic))
       (org-block-end-line (:background ,background :foreground ,background+++ :slant italic))
       (org-code (:foreground ,tertiary))
@@ -375,6 +375,11 @@
       (org-todo (:foreground ,rose))
       (org-upcoming-deadline (:foreground ,tertiary))
       (org-warning (:weight bold :foreground ,rose))
+      (org-level-1 (:weight bold :foreground ,primary))
+      (org-level-2 (:weight bold :foreground ,secondary))
+      (org-level-3 (:weight bold :foreground ,primary+))
+      (org-level-4 (:weight bold :foreground ,secondary+))
+
 
       ;; Ledger-mode
       (ledger-font-background+++-face (:inherit font-lock-background+++-face))
@@ -640,62 +645,6 @@ given mode e.g `dark' or `light'"
          `(window-divider-mode nil)
 	 ))
        (provide-theme ',name))))
-
-
-;; ;;;;;;;;;;;;;;;;;;;;;
-;;    ;; base theming    ;;
-;; ;;;;;;;;;;;;;;;;;;;;;
-
-;;    ;;`(default ((,class (:foreground ,neutral-900 :background ,neutral-100))))
-;;    `(hl-line ((,class (:background ,neutral-200))))
-;;    `(cursor ((,class (:background ,secondary-800))))
-;;    `(region ((,class (:background ,neutral-300))))
-;;    `(highlight ((,class (:background ,neutral-200))))
-;;    `(trailing-whitespace ((,class (:background ,rose-300))))
-
-;;    ;; N.B this is included to ensure we are using a font that has the
-;;    ;; line glyph, it would be nicer to have a more concise function
-;;    ;; for this.
-;;    (if *hypalynx/fill-column-font*
-;;        `(fill-column-indicator ((,class (:foreground ,neutral-300
-;; 						     :font ,*hypalynx/fill-column-font*))))
-;;      `(fill-column-indicator ((,class (:foreground ,neutral-300)))))
-
-;;    ;; UI theming
-;;    `(line-number ((,class (:foreground ,neutral-500))))
-;;    `(line-number-current-line ((,class (:foreground ,secondary-800))))
-;;    `(mode-line ((,class (:background ,neutral-200))))
-
-;;    ;; text/buffer theming
-;;    `(font-lock-background+++-face ((,class (:foreground ,neutral-500 :italic t))))
-;;    ;; clojure keywords
-;;    `(font-lock-constant-face ((,class (:foreground ,secondary-900))))
-;;    ;; clojure ns names, kw name prefixes, require aliases
-;;    `(font-lock-type-face ((,class (:foreground ,emerald-700))))
-;;    ;; clojure core fns e.g ns/defn/def
-;;    `(font-lock-keyword-face ((,class (:foreground ,secondary-900))))
-;;    `(font-lock-function-name-face ((,class (:foreground ,emerald-800))))
-;;    `(font-lock-string-face ((,class (:foreground ,emerald-800))))
-;;    `(font-lock-variable-name-face ((,class (:foreground ,emerald-800))))
-;;    `(font-lock-warning-face ((,class (:foreground ,rose-800))))
-
-;;    ;; org theming
-;;    `(org-todo ((,class (:foreground ,rose-800 :bold t))))
-;;    `(org-date ((,class (:foreground ,rose-800))))
-;;    `(org-ellipsis ((,class (:foreground ,rose-800))))
-;;    `(org-level-1 ((,class (:foreground ,emerald-900 :bold t))))
-;;    `(org-level-2 ((,class (:foreground ,secondary-900 :bold t))))
-;;    `(org-agenda-structure ((,class (:foreground ,secondary-900 :bold t))))
-;;    `(org-scheduled-previously ((,class (:foreground ,secondary-900))))
-;;    `(org-imminent-deadline ((,class (:foreground ,rose-900 :bold t))))
-;;    `(org-scheduled-today ((,class (:foreground ,emerald-800))))
-;;    `(org-scheduled ((,class (:foreground ,emerald-800))))
-;;    `(org-habit-clear-face ((,class (:background ,secondary-700 :foreground ,secondary-300))))
-;;    `(org-habit-clear-future-face ((,class (:background ,secondary-100))))
-;;    `(org-habit-alert-future-face ((,class (:background ,amber-200))))
-;;    `(org-habit-overdue-face ((,class (:background ,rose-600 :foreground ,rose-300))))
-;;    `(org-habit-overdue-futureface ((,class (:background ,rose-100))))
-;;    ))
 
 (defcustom hypalynx-disable-parens-highlight nil
   "Allows you to disable the font-locking that highlights

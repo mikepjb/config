@@ -11,3 +11,11 @@ history
 org/
 bookmarks
 eln-cache/
+*lsp*
+projects
+
+# for emacs get requests
+url/
+
+# for clojure-lsp file cache (e.g files you visit from external libs)
+workspace/

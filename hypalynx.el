@@ -34,12 +34,30 @@
     :emerald-700 "#047857"
     :emerald-800 "#115e59"
     :emerald-900 "#064e3b"
+    :lime-100 "#ecfccb"
+    :lime-200 "#d9f99d"
+    :lime-300 "#bef264"
+    :lime-400 "#a3e635"
+    :lime-500 "#84cc16"
+    :lime-600 "#65a30d"
+    :lime-700 "#4d7c0f"
+    :lime-800 "#3f6212"
+    :lime-900 "#365314"
     :sky-200 "#bae6fd"
     :sky-300 "#7dd3fc"
     :sky-400 "#38bdf8"
     :sky-700 "#0369a1"
     :sky-800 "#075985"
     :sky-900 "#0c4a6e"
+    :cyan-100 "#cffafe"
+    :cyan-200 "#a5f3fc"
+    :cyan-300 "#67e8f9"
+    :cyan-400 "#22d3ee"
+    :cyan-500 "#06b6d4"
+    :cyan-600 "#0891b2"
+    :cyan-700 "#0e7490"
+    :cyan-800 "#155e75"
+    :cyan-900 "#164e63"
     :amber-700 "#b45309"
     :amber-600 "#d97706"
     :amber-500 "#f59e0b"
@@ -55,31 +73,28 @@
 (defun hl-g (kw)
   (plist-get hypalynx-color-palette kw))
 
-;; should we even have lime/red/cyan/pink/blue/yellow/green?
-;; probably.. if only for ansi/term compatability
-
 (defconst hypalynx-color-theme
-  `(:dark (
+  `(:dark ( ;; primary is cyan in dark mode
 	   :foreground ,(hl-g :stone-50)
 	   :foreground+ ,(hl-g :stone-100)
 	   :foreground++ ,(hl-g :stone-200)
 	   :background ,(hl-g :stone-900)
 	   :background+ ,(hl-g :stone-800)
 	   :background++ ,(hl-g :stone-700)
-	   :background+++ ,(hl-g :stone-500)
-	   :primary ,(hl-g :emerald-400)
-	   :primary+ ,(hl-g :emerald-300)
-	   :primary++ ,(hl-g :emerald-200)
-	   :primary+++ ,(hl-g :emerald-100)
-	   :secondary ,(hl-g :sky-400)
-	   :secondary+ ,(hl-g :sky-300)
-	   :secondary++ ,(hl-g :sky-200)
+	   :background+++ ,(hl-g :stone-400)
+	   :primary ,(hl-g :cyan-500)
+	   :primary+ ,(hl-g :cyan-400)
+	   :primary++ ,(hl-g :cyan-300)
+	   :primary+++ ,(hl-g :cyan-200)
+	   :secondary ,(hl-g :lime-400)
+	   :secondary+ ,(hl-g :lime-300)
+	   :secondary++ ,(hl-g :lime-200)
 	   :tertiary ,(hl-g :amber-700)
 	   :violet ,(hl-g :violet-700)
 	   :violet+ ,(hl-g :violet-800)
 	   :violet++ ,(hl-g :violet-900)
 	   :rose ,(hl-g :rose-200))
-	  :light (
+	  :light ( ;; primary is lime is light mode
 		  :foreground ,(hl-g :stone-900)
 		  :foreground+ ,(hl-g :stone-800)
 		  :foreground++ ,(hl-g :stone-700)
@@ -87,13 +102,13 @@
 		  :background+ ,(hl-g :stone-200)
 		  :background++ ,(hl-g :stone-300)
 		  :background+++ ,(hl-g :stone-500)
-		  :primary ,(hl-g :emerald-900)
-		  :primary+ ,(hl-g :emerald-800)
-		  :primary++ ,(hl-g :emerald-700)
-		  :primary+++ ,(hl-g :emerald-600)
-		  :secondary ,(hl-g :sky-900)
-		  :secondary+ ,(hl-g :sky-800)
-		  :secondary++ ,(hl-g :sky-700)
+		  :primary ,(hl-g :lime-900)
+		  :primary+ ,(hl-g :lime-800)
+		  :primary++ ,(hl-g :lime-700)
+		  :primary+++ ,(hl-g :lime-600)
+		  :secondary ,(hl-g :cyan-900)
+		  :secondary+ ,(hl-g :cyan-800)
+		  :secondary++ ,(hl-g :cyan-700)
 		  :tertiary ,(hl-g :amber-700)
 		  :tertiary+ ,(hl-g :amber-600)
 		  :tertiary++ ,(hl-g :amber-500)
@@ -147,7 +162,7 @@
       (font-lock-preprocessor-face (:foreground ,rose))
       (font-lock-regexp-grouping-backslash (:foreground ,rose))
       (font-lock-regexp-grouping-construct (:foreground ,rose))
-      (font-lock-string-face (:foreground ,primary++))
+      (font-lock-string-face (:foreground ,secondary++))
       (font-lock-type-face (:foreground ,primary))
       (font-lock-warning-face (:weight bold :foreground ,rose))
       (shadow (:foreground ,background+++)) ;; includes line numbers
@@ -155,7 +170,7 @@
       (error (:foreground ,rose))
       (warning (:foreground ,rose))
       (tooltip (:foreground ,foreground :background ,background :inverse-video t))
-      (hypalynx-parens-face (:foreground ,primary+++))
+      (hypalynx-parens-face (:foreground ,primary+))
 
       ;; Emacs interface
       (cursor (:background ,rose))
@@ -586,6 +601,8 @@
       (slime-repl-output-face (:foreground ,secondary :background ,background))
       (slime-repl-inputed-output-face (:foreground ,background+++))
 
+      (comint-highlight-prompt (:foreground ,rose))
+
       ;; ;; vterm
       ;; (vterm-color-black (:background ,term-black :foreground ,term-black))
       ;; (vterm-color-secondary (:background ,secondary :foreground ,secondary))
@@ -656,7 +673,7 @@ parentheses, brackets and braces.")
   :group 'hypalynx-parens)
 
 (define-minor-mode hypalynx-parens
-  "Highlights parentheses, brackets & braces."
+  "TODO Highlights parentheses, brackets & braces."
   :lighter " Hlp"
   (font-lock-add-keywords
    nil `((,(regexp-opt '("(" ")" "[" "]" "{" "}"))

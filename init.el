@@ -4,7 +4,18 @@
 ;; default system variables  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(eval-when-compile (require 'subr-x)) ;; string-join comes from here
+
 (defconst *is-a-mac* (eq system-type 'darwin))
+
+(when *is-a-mac* ;; for native compilation on mac os
+  (setenv
+   "LIBRARY_PATH"
+   (string-join
+    '("/opt/homebrew/opt/gcc/lib/gcc/12"
+      "/opt/homebrew/opt/libgccjit/lib/gcc/12"
+      "/opt/homebrew/opt/gcc/lib/gcc/12/gcc/aarch64-apple-darwin22/12") 
+    ":")))
 
 (defconst *fixed-font*
   (cond ((x-list-fonts "Recursive Mono Linear Static") "Recursive Mono Linear Static")
@@ -47,6 +58,7 @@
       native-comp-async-query-on-exit t
       native-comp-async-jobs-number 4
       native-comp-async-report-warnings-errors nil
+      read-process-output-max (* 1024 1024) ;; 1mb
       scroll-margin 4
       scroll-step 1
       scroll-conservatively 10000
@@ -172,18 +184,24 @@
 (setq config/external-package-list
       '((org-bullets . (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
 	;; (olivetti . (add-hook 'org-mode-hook (lambda () (config/org-mode-olivetti))))
-	;; inf-clojure
-	(clojure-mode . (add-hook 'clojure-mode-hook 'inf-clojure-minor-mode))
+	inf-clojure
+	(clojure-mode . (add-hook 'clojure-mode-hook (lambda ()
+						       (inf-clojure-minor-mode)
+						       (lsp-deferred))))
 	racket-mode ;; run this too `raco pkg install --auto drracket'
 	(company . (global-company-mode t)) ;; might be part of emacs?
 	markdown-mode
 	projectile
 	projectile-ripgrep
 	paredit
+	magit
+	lsp-mode
+	lsp-ui
 	ledger-mode))
 
-;; (require 'inf-clojure (expand-file-name "~/src/inf-clojure/inf-clojure.el"))
-(load (expand-file-name "~/src/inf-clojure/inf-clojure.el"))
+;; ;; N.B used to develop local inf-clojure
+;; (when (require 'clojure-mode nil t)
+;;   (load (expand-file-name "~/src/inf-clojure/inf-clojure.el")))
 
 (defun config/load-packages (pkgs)
   (dolist (pkg pkgs)
@@ -225,9 +243,23 @@
       (define-key paredit-mode-map (kbd "M-;") nil)
       (define-key paredit-mode-map (kbd "M-s") nil))))
 
+(when (require 'company nil t)
+  (eval-after-load "company"
+    (define-key company-active-map (kbd "C-w") nil)))
+
 (when (require 'inf-clojure nil t)
-  (setq inf-clojure-cli-args "-Mdev"
-	inf-clojure-cljs-cli-args "-Mdev"))
+  (defun inf-clojure-socket-repl-clojure-custom ()
+    (interactive)
+    (let ((inf-clojure-custom-repl-type 'clojure))
+      (inf-clojure-socket-repl
+       "clojure -J-Dclojure.server.repl=\"{:port %d :accept clojure.core.server/repl}\" -Adev"))))
+
+(when (require 'lsp-mode nil t) ;; lsp-ui not installed
+  (setq lsp-enable-symbol-highlighting nil
+	lsp-lens-enable nil ;; shows 'X references'
+	lsp-headerline-breadcrumb-enable nil
+	lsp-ui-sideline-enable t
+	))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; user functions               ;;
@@ -284,16 +316,6 @@
       (tab-bar-close-tab)
     (delete-window)))
 
-(defun config/inf-clj ()
-  (interactive)
-  (inf-clojure-socket :repl-type "clojure"))
-
-
-(defun config/inf-cljs ()
-  (interactive)
-  (inf-clojure-socket :repl-type "cljs"))
-
-
 (define-prefix-command 'frame-map) ;; prefix for tmux-like actions
 
 (dolist
@@ -313,6 +335,7 @@
        ("C-c l" . ,(ifn-from "~/src/" 'find-file))
        ("C-c g" . magit)
        ("C-c p" . projectile-find-file)
+       ("C-c j" . inf-clojure-socket-repl-clojure-custom)
        ;; inf-clojure bindings
        ;; org-timer-set-timer
        ;; org-timer-pause-or-continue

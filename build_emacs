@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# for mac os/darwin
+# N.B for native compilation you need to make sure your LIBRARY_PATH is set correctly, which 
+
+build_macos() {
+  brew install gcc libgccjit autoconf automake texinfo
+
+  # building off master is pretty bold! 28.2 is the latest release the last time I built Emacs.
+  git clone https://github.com/emacs-mirror/emacs.git
+  cd emacs
+  autoreconf -isvf
+  ./configure --with-native-compilation
+  make -j10
+  make check
+  make install
+}
+
+build_macos()

@@ -14,7 +14,14 @@
    (string-join
     '("/opt/homebrew/opt/gcc/lib/gcc/12"
       "/opt/homebrew/opt/libgccjit/lib/gcc/12"
-      "/opt/homebrew/opt/gcc/lib/gcc/12/gcc/aarch64-apple-darwin22/12") 
+      "/opt/homebrew/opt/gcc/lib/gcc/12/gcc/aarch64-apple-darwin22/12")
+    ":"))
+
+  (setenv
+   "PATH"
+   (string-join
+    '("/opt/homebrew/bin" "/usr/local/bin" "/usr/local/sbin" "/bin" "/usr/bin"
+      "/opt/homebrew/opt/node@16/bin")
     ":")))
 
 (defconst *fixed-font*
@@ -73,7 +80,10 @@
       custom-file (concat user-emacs-directory "custom.el")
       package-enable-at-startup nil
       ring-bell-function nil
-      backup-directory-alist `(("." . "~/.saves"))
+      backup-directory-alist `((".*" . "~/.saves")) ;; can also use temp-file-dir
+      auto-save-file-name-transforms `((".*" ,temporary-file-directory t))
+      enable-local-variables :safe ;; enable safe local vars only, ignore the rest
+      safe-local-variable-values '((git-commit-prefix . #'stringp))
       garbage-collection-messages t)
 
 (when *is-a-mac*
@@ -115,8 +125,7 @@
 ;; package settings             ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(setq org-agenda-files `(,(concat user-emacs-directory "org.org")
-			 ,(concat user-emacs-directory "org"))
+(setq org-agenda-files `(,(concat user-emacs-directory "org"))
       org-agenda-start-on-weekday nil	; show the next 7 days
       org-agenda-start-day "0d"
       org-agenda-span 14
@@ -184,6 +193,7 @@
 (setq config/external-package-list
       '((org-bullets . (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
 	;; (olivetti . (add-hook 'org-mode-hook (lambda () (config/org-mode-olivetti))))
+	olivetti
 	inf-clojure
 	(clojure-mode . (add-hook 'clojure-mode-hook (lambda ()
 						       (inf-clojure-minor-mode)
@@ -241,7 +251,8 @@
   (eval-after-load "paredit"
     (progn
       (define-key paredit-mode-map (kbd "M-;") nil)
-      (define-key paredit-mode-map (kbd "M-s") nil))))
+      (define-key paredit-mode-map (kbd "M-s") nil) ;; originally paredit-splice-sexp
+      (define-key ielm-map (kbd "C-j") 'paredit-newline))))
 
 (when (require 'company nil t)
   (eval-after-load "company"
@@ -276,6 +287,15 @@
   (interactive)
   ;; TODO .bash_profile? > . ~/.bashrc
   (shell-command (concat  "ln -s " user-emacs-directory "bashrc $HOME/.bashrc")))
+
+(defun config/backup ()
+  "Encrypts org files, unencrypt with `gpg -d org-backup.tar.gz.gpg | tar zxf -'."
+  (interactive)
+  (let ((default-directory (concat user-emacs-directory "org")))
+    (async-shell-command
+     (concat "tar czf - . "
+	     " | gpg --pinentry-mode loopback -c --no-symkey-cache > "
+	     user-emacs-directory "org-backup.tar.gz.gpg"))))
 
 (defun focus-mode ()
   (interactive)
@@ -323,8 +343,8 @@
      `(
        ("M-o" . other-window)
        ("C-c i" . ,(ifn (find-file user-init-file)))
-       ("C-c n" . ,(ifn (find-file (concat user-emacs-directory "notes.org"))))
-       ("C-c o" . ,(ifn (find-file (concat user-emacs-directory "org.org"))))
+       ("C-c n" . ,(ifn (find-file (concat user-emacs-directory "org/index.org"))))
+       ("C-c o" . ,(ifn (find-file (concat user-emacs-directory "org/org.org"))))
        ("C-c O" . ,(ifn-from "~/.emacs.d/org/" 'find-file))
        ("C-c k" . ,(ifn-from "~/src/knowledge/src/" 'find-file))
        ("C-c K" . ,(ifn-from "~/src/knowledge/src/" 'projectile-ripgrep))
